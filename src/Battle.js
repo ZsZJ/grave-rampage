@@ -1,9 +1,16 @@
 import Phaser from "phaser"
 
+// Assets images
 import backgroundImg from "./assets/background.png"
 import floor from "./assets/ground.png"
 import dude from './assets/dude.png'
 import bullet from './assets/bullet.png'
+import zombie from './assets/zombie/idle/idle_1.png'
+
+// Classes
+import Bullet from './Bullet';
+import Dude from './Dude';
+import Zombie from "./Zombie";
 
 class Battle extends Phaser.Scene {
     
@@ -12,9 +19,11 @@ class Battle extends Phaser.Scene {
     }
 
     preload() {
+        // Load assets for the battle
         this.load.image("background", backgroundImg)
-        this.load.image("ground", floor);
+        this.load.image("ground", floor)
         this.load.image("bullet", bullet)
+        this.load.image("zombie", zombie)
         this.load.spritesheet('dude', 
             dude,
             { frameWidth: 32, frameHeight: 48 }
@@ -30,96 +39,63 @@ class Battle extends Phaser.Scene {
         this.ground = this.physics.add.staticGroup()
         this.ground.create(400, 568, 'ground').setScale(2).refreshBody()
 
-        // Add the player
-        this.player = this.physics.add.sprite(400, 510, 'dude').setScale(1.4)
-        this.player.setBounce(0.2)
-        this.player.setCollideWorldBounds(true)
+        // this.keys will contain the controls for the dude a.k.a player
+        this.keys = {
+            left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
+            right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
+            fire: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)            
+        }
 
-        // Player and ground collision
-        this.physics.add.collider(this.player, this.ground)
+        // Create the player
+        this.dude = new Dude({
+            scene: this,
+            key: 'dude',
+            x: 400,
+            y: 520,
+        })
 
-        // All cursor keys of the arrows on keyboard
-        this.cursors = this.input.keyboard.createCursorKeys()
+        // Create the zombie
+        this.zombie = new Zombie({
+            scene: this,
+            key: 'zombie',
+            x: 200,
+            y: 505
+        })  
 
-        // Player faces left or right
-        this.player.state = 'left'
-
-        // Make bullet group
-        var Bullet = new Phaser.Class({
-            Extends: Phaser.GameObjects.Image,
-            initialize:
-
-            function Bullet (scene) {
-                Phaser.GameObjects.Image.call(this, scene, 0, 0, 'bullet')
-                this.speed = Phaser.Math.GetSpeed(600, 1);
-                this.state = "left";
-            },
-
-            fire: function (x, y) {
-                this.setPosition(x, y)
-                this.setActive(true);
-                this.setVisible(true);
-            },
-
-            update: function(time, delta) {
-
-                if(this.state === "left") {
-                    this.x -= 10;
-                }
-                else {
-                    this.x += 10; 
-                }
-
-                if (this.x > 820 || this.x < 0)
-                {
-                    this.setActive(false);
-                    this.setVisible(false);
-                }
-            }
-
-        }, this)
-
+        // Create bullet group
         this.bullets = this.add.group({
             classType: Bullet,
+            maxSize: 3,
             runChildUpdate: true 
         });
 
-        this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
+        // Adding the colliders
+        this.physics.add.collider(this.dude, this.ground)
+        this.physics.add.collider(this.zombie, this.dude, this.hitplayer)
+        this.physics.add.collider(this.zombie, this.bullets, this.hitbullet)
 
+        // Create Enemy group
+        this.enemies = this.add.group({
+            runChildUpdate: true
+        })
+    }
+
+    hitbullet(zombie, bullet) {
+        bullet.destroy()
+        zombie.health--
+        if(zombie.health == 0) {
+            zombie.destroy()
+        }
+    }
+
+    hitplayer(zombie, dude) {
+        zombie.walkingSpeed = 0
     }
 
     update() {
-
-        // Player face left side
-        if (this.cursors.left.isDown) {
-            this.player.setScale(1.4, 1.4)
-            this.player.state = 'left'
-        }
-
-        // Player face right side
-        else if (this.cursors.right.isDown) {
-            this.player.setScale(-1.4, 1.4)
-            this.player.state = 'right'
-        }
-
-        if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
-
-            let bullet = this.bullets.get();
-
-            if (bullet) {
-
-                bullet.setScale(.3)
-
-                let bulletPosition = this.player.x - 50;
-
-                if(this.player.state === "right") {
-                    bulletPosition = this.player.x + 50
-                }
-
-                bullet.state = this.player.state
-                bullet.fire(bulletPosition, this.player.y);
-            }
-        }
+        // Update the dude
+        this.dude.update(this.keys)
+        this.zombie.update()
     }
 
 }
