@@ -16,20 +16,28 @@ class Dude extends Phaser.GameObjects.Sprite {
     }
 
     update(keys) {
+        
+        // Object to keep trace of the keys input
         let input = {
             left: keys.left.isDown,
             right: keys.right.isDown,
             fire: Phaser.Input.Keyboard.JustDown(keys.fire)
         }
+
+        // Left side
         if(input.left) {
             this.side = "left"
             this.setScale(1.4, 1.4)
 
         }
+
+        // Right side
         else if(input.right) {
             this.side = "right"
             this.setScale(-1.4, 1.4)
         }
+
+        // Fire!!
         else if(input.fire) {
             let bullet = this.scene.bullets.get(this)
             if(bullet) {

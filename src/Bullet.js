@@ -34,12 +34,18 @@ class Bullet extends Phaser.GameObjects.Sprite {
 
     // Keep the bullet flowing
     update() {
+
+        // Bullet flows to the left
         if(this.side === "left") {
             this.x -= 10;
         }
+
+        // Bullet flows to the right
         else {
             this.x += 10; 
         }
+
+        // Bullet falls out of boundry
         if (this.x > 820 || this.x < 0) {
             this.destroy()
         }
